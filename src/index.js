@@ -3,11 +3,6 @@
 // import { arrayOf, valuesOf, unionOf } from 'normalizr';
 import { Record, Map, List, Iterable } from 'immutable';
 
-//Shim for new Proxy instead of Proxy.create
-import Proxy from 'harmony-proxy';
-//Should patch proxy to work properly
-// import Reflect from 'harmony-reflect';
-
 import RecordEntitySchema from './RecordEntitySchema';
 import IterableSchema from './IterableSchema';
 import UnionSchema from './UnionSchema';
@@ -19,46 +14,6 @@ const PolymorphicMapper = new Record({id:null, schema: null});
 
 function defaultAssignEntity(normalized, key, entity) {
   normalized[key] = entity;
-}
-
-function proxy(id, schema, bag, options){
-  /**
-   * if options contains getState reference and reducer key we can create a proxyHandler
-   */
-  if(typeof Proxy === 'undefined')
-    return id;
-
-  return new Proxy({id: id, key: schema.getKey()},{
-    get(target, name, receiver) {
-
-      if(name === 'id')
-        return target.id;
-
-      const state = options.getState();
-
-      if(state[schema.getReducerKey()].entities){
-        if(options.useMapsForEntityObjects){
-          return state[schema.getReducerKey()].entities[schema.getKey()].get(target.id + '')[name];
-        }else{
-          return state[schema.getReducerKey()].entities[schema.getKey()][target.id][name];
-        }
-      }
-      return undefined;
-    },
-    set(k,v){
-      throw new Error('Not supported');
-    },
-    has(name){
-      if(options.useMapsForEntityObjects){
-        return options.getState()[schema.getReducerKey()].entities[schema.getKey()].get(id + '').has(name);
-      }else{
-        return options.getState()[schema.getReducerKey()].entities[schema.getKey()][id].has(name);
-      }
-    },
-    valueOf : function () {
-      return 0;
-    }
-  });
 }
 
 function visitObject(obj, schema, bag, options) {
@@ -165,10 +120,6 @@ function visitEntity(entity, entitySchema, bag, options) {
   let normalized = visitRecord(entity, entitySchema, bag, options);
   bag[entityKey][id] = mergeIntoEntity(stored, normalized, entityKey);
 
-  if(options.getState){
-    return proxy(id, entitySchema, bag, options);
-  }
-
   return id;
 }
 
@@ -213,7 +164,6 @@ function unionOf(schema, options) {
  * object: a javascript object
  * schema: a RecordEntitySchema
  * options: an object with the following optional keys
- *  getState: a function reference that returns the current state. If available, a proxy will be placed in place of an id reference (the key needs to be reference in the schema definition)
  *  useMapsForEntityObjects: boolean. If true, will use a Map in stead of a Record to store id-RecordObject pairs. This means that you have to access a specific entity object like so:
  *  `
  * useMapsForEntityObjects:false, this.props.articleReducer.entities.articles[5].label
@@ -244,7 +194,6 @@ function unionOf(schema, options) {
 function normalize(obj, schema, options = {
   getState: undefined,
   useMapsForEntityObjects: false,
-  useProxyForResults:false
 }) {
 
   if (!lodashIsObject(obj) && !Array.isArray(obj)) {
@@ -255,28 +204,15 @@ function normalize(obj, schema, options = {
     throw new Error('Normalize accepts an object for schema.');
   }
 
-  if(options.getState && typeof Proxy === 'undefined'){
-    console.warn('Proxies not supported in this environment');
-  }
-
   let bag = {};
   let entityStructure = {};
   let keyStructure = {};
   let results = [];
 
-  //This will either return a sequence, an id or a Proxy object
+  //This will either return a sequence, or an id
   let result = visit(obj, schema, bag, options);
 
-  //we are now assuming that the returned "ids" are actually proxies if there is a getState method
-  if(options.getState && !options.useProxyForResults){
-    results = result instanceof List?
-      result.map(function(val){
-        return val.id;
-      }) :
-      result.id
-  }else{
-    results = result;
-  }
+  results = result;
 
   let entities = null;
 

@@ -1,6 +1,6 @@
 {
   "name": "normalizr-immutable",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Normalizes JSON to immutable Records according to schema for Redux applications and provide proxied access to properties",
   "main": "lib/index.js",
   "private": false,
@@ -32,8 +32,7 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "harmony-proxy": "^1.0.1",
-    "immutable": "^3.7.6",
+    "immutable": "4.0.0-rc.2",
     "lodash": "^4.2.1",
     "lodash-es": "^4.2.1",
     "normalizr": "^2.0.2"

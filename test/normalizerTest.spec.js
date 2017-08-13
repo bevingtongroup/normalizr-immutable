@@ -86,23 +86,6 @@ describe("test normalizr", () => {
       expect(normalized.entities.articles[49441].user).to.equal(193);
     });
 
-    it("should allow a proxy function to lazy load the reference", () => {
-
-      const normalized = normalize(json.articles.items, arrayOf(schemas.article),{
-        getState:store.getState
-      });
-
-      store.dispatch({
-        type:'articles',
-        payload:normalized
-      })
-
-      expect(normalized.entities.articles[49443].user.id).to.equal(192);
-      expect(normalized.entities.articles.get(49443).user.get('id')).to.equals(192);
-      expect(normalized.entities.articles.get(49443).user.nickName).to.equal('Marc');
-
-    });
-
     it("show dynamic state changes after the reference has passed and not just a passed static state", () => {
 
       let normalized = normalize(json.articles.items, arrayOf(schemas.article),{
@@ -267,20 +250,6 @@ describe("test normalizr", () => {
         should().fail('We cannot merge Records when keys are added.');
       }catch(err){}
 
-    });
-
-    it("allows accessing results through a proxy", () => {
-      const normalized = normalize(json.articles.items, arrayOf(schemas.article),{
-        getState:store.getState,
-        useProxyForResults:true
-      });
-
-      store.dispatch({
-        type:'articles',
-        payload:normalized
-      });
-
-      expect(normalized.result.get(0).user.nickName).to.equal('Diogenes');
     });
 
     it("show processing of unions", () => {
